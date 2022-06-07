@@ -3,7 +3,7 @@
 #include <stdbool.h>
 
 #include "BOOT/bootloader.h"
-#include "COM/boot_communication_Uart.h"
+#include "COM/communication_uart_dma.h"
 #include "definitions.h"                // SYS function prototypes
 
 #define APP_START_ADDRESS   0x8000
@@ -15,6 +15,10 @@ typedef enum
     PROP_MAX
 } PropertyType_t;
 
+typedef struct
+{
+    uint32_t DeviceVersion;
+} DeviceInfo_t;
 
 void App_TimerCallback(TC_TIMER_STATUS status, uintptr_t context);
 
@@ -29,9 +33,8 @@ const ComUartDma_Cofig_t UartDamConfig = {
     .InitUart = true,
     .UartConfig = {
         .Channel = 0x04U,
-        .ClockSource = GCLK_CHANNEL_0,
-        .ClockFreq = 48000000,
-        .Baudrate = 2000000,            
+        .ClockSource = 0,
+        .ClockFreq = 48000000,        .Baudrate = 2000000,            
         .Databits = UART_DATABITS_8,
         .Parity = UART_PARITY_NONE,
         .Stopbits = UART_STOPBITS_1,
@@ -59,9 +62,12 @@ static const BootConfig_t config = {
 
 static Property_t PropertyGuardReloadValue = APP_TIMEOUT_DEFAULT_REPEAT;
 static Property_t Properties[PROP_MAX] = {0};
+static DeviceInfo_t DeviceInfo = { 
+    .DeviceVersion = 0x01010001
+};
 
 
-__attribute__((noreturn)) void uniloader_demo(void)
+void __attribute__((noreturn)) uniloader_demo(void)
 {
     SetProperty(PROP_GARD, APP_TIMEOUT_DEFAULT_REPEAT);
 
@@ -69,6 +75,8 @@ __attribute__((noreturn)) void uniloader_demo(void)
     TC0_TimerStart();
     
     Boot_App(&config);
+    
+    while(1);
 }
 
 void App_TimerCallback(TC_TIMER_STATUS status, uintptr_t context)
